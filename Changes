@@ -1,6 +1,20 @@
 CGI-Builder-Magic Latest Versions Changes
 
 
+Version 1.2
+- The tm and tm_new_args and tm_lookups_package accessors are now
+  referring to class variables (before they were instance variables),
+  this improves performances under mod_perl
+- Under mod_perl the tm object does not get destroyed anymore,
+  but it is used for all processes thus saving some processing time
+- Eliminated the OH_cleanup handler, now useless
+- Improved lookup system for special integrations
+- Improved tm value_handlers
+- Improved POD with more details and orgaization
+- Changed the prerequisite C::B version to 1.2
+- Some internal changes to be more consistent with new 1.2 version
+- Fixed perl_side_include example with new Apache::CGI::Builder interface
+
 Version 1.13
 - Internal changes for lookups to allow more flexible usage (the automatic
   lookups are added to the constructor instead of the temporary lookups)

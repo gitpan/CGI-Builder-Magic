@@ -11,6 +11,9 @@ perl_side_include/www/show_env.html
 perl_side_include/www/show_mix.html
 README
 t/01_features.t
+t/02_sess.t
 t/Test.pm
+t/TestS.pm
 t/tm/ENV_RM.html
 t/tm/index.html
+t/tm/sess.html

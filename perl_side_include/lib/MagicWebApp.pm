@@ -2,9 +2,8 @@
 # start, show_env and show_mix
 
 package MagicWebApp ;
-use CGI::Builder
+use Apache::CGI::Builder
   qw| CGI::Builder::Magic
-      Apache::CGI::Builder
     |;
 
 # defaults are fine so nothing to define here
