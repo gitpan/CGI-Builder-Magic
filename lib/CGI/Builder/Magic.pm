@@ -1,20 +1,41 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.0 ;
+$VERSION = 1.1 ;
           
 ; use strict
 ; use Carp
 ; $Carp::Internal{+__PACKAGE__}++
+; $Carp::Internal{'CGI::Builder::Magic::_'}++
 
 ; use File::Spec
 ; use Template::Magic
-; $Carp::Internal{'Template::Magic'}++
+
+; my $print_code
+
+; sub CGI::Builder::Magic::_::tm_print
+   { my $s = shift
+   ; my $lkps = $s->tm_lookups
+   ; $lkps &&= [ $lkps ] unless ref $lkps eq 'ARRAY'
+   ; my $err = $s->page_error
+               if ref $s->page_error eq 'HASH'
+   ; $s->tm
+       ->nprint( template => $s->tm_template
+               , lookups  => [ defined $lkps ? @$lkps : ()
+                             , defined $err  ? $err   : ()
+                             ]
+               )
+   }
+   
+; BEGIN
+   { $print_code = sub{ shift()->CGI::Builder::Magic::_::tm_print(@_) }
+   }
 
 ; use Object::groups
       ( { name       => 'tm_new_args'
         , default
           => sub
               { { lookups        => [ $_[0]->tm_lookups_package ]
-                , value_handlers => [ $_[0]->CGI::Builder::Magic::_::lookup_CODE()
+                , value_handlers => [ $_[0]
+                                      ->CGI::Builder::Magic::_::lookup_CODE()
                                     , 'HTML'
                                     ]
                 , markers        => 'HTML'
@@ -42,7 +63,7 @@ $VERSION = 1.0 ;
         , default    => '.html'
         }
       , { name       => 'page_content'
-        , default    => sub{ shift()->CGI::Builder::Magic::_::tm_print(@_) }
+        , default    => sub{ return $print_code }
         }
       )
       
@@ -50,26 +71,6 @@ $VERSION = 1.0 ;
    { Template::Magic->new( %{$_[0]->tm_new_args} )
    }
 
-; sub CGI::Builder::Magic::_::tm_print
-   { my ($s) = @_
-   ; my $t = $s->tm_template
-   ; my $lkps = $s->tm_lookups
-   ; $lkps &&= [ $lkps ] unless ref $lkps eq 'ARRAY'
-   ; my $err = $s->page_error
-               if ref $s->page_error eq 'HASH'
-   ; $s->tm
-       ->nprint( template => File::Spec
-                             ->file_name_is_absolute( $t )
-                             ? $t
-                             : File::Spec->catfile( $s->page_path
-                                                  , $t
-                                                  )
-               , lookups  => [ defined $lkps ? @$lkps : ()
-                             , defined $err  ? $err   : ()
-                             ]
-               )
-   }
-   
 ; sub CGI::Builder::Magic::_::lookup_CODE     # value handler
    { my ($s) = @_
    ; sub
@@ -84,6 +85,30 @@ $VERSION = 1.0 ;
       }
    }
 
+; sub page_content_check
+   { my $s = shift
+   ; my $status = $Apache::CGI::Builder::VERSION
+                ? '404 Not Found'
+                : '204 No Content'
+   ; my $t = $s->tm_template
+   ; $t = $s->tm_template = File::Spec
+                       ->file_name_is_absolute( $t )
+                       ? $t
+                       : File::Spec->catfile( $s->page_path
+                                            , $t
+                                            )
+   ; if (  not( length $s->page_content )
+        || (  $s->page_content eq $print_code
+           && not -f $t
+           )
+        )
+      { $s->header( -status => $status )
+            unless defined $s->header->{-status}
+      ; return 0
+      }
+   ; 1
+   }
+
 ; 1
 
 __END__
@@ -92,9 +117,9 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.0
+=head1 VERSION 1.1
 
-To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">     
+The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
 =head1 INSTALLATION
 
@@ -102,7 +127,7 @@ To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"
 
 =item Prerequisites
 
-    CGI::Builder    >= 1.0
+    CGI::Builder    >= 1.1
     Template::Magic >= 1.0
 
 =item CPAN
@@ -199,7 +224,7 @@ B<Note>: All the CBF extensions are fully mod_perl 1 and 2 compatible (i.e. you 
     
     # this value will be substituted to each
     # 'app_name' label in EACH TEMPLATE that include it
-    our $app_name = 'WebApp 1.0' ;
+    our $app_name = 'WebApp 1.1' ;
     
     # same for each 'Time' label
     sub Time { scalar localtime }
@@ -413,6 +438,21 @@ This module sets the default of the C<page_suffix> to '.html'. You can override 
 =head3 CBF page_content
 
 This module sets the default of the C<page_content> to a CODE reference that produces the page content by using an internal Template::Magic object with HTML syntax (see also L<"How it works">). If you want to bypass the template system in any Page Handler, just explicitly set the C<page_content> to the content you want to send.
+
+=head2 CBF overridden methods
+
+=head3 page_content_check
+
+This extension use this method to check if the template file exists before using its template print method, thus avoiding a fatal error when the requested page is not found. Instead of an error, the process will send a '204 No Content' status to the client or a '404 Not Found' status if the CBB is including Apache::CGI::Builder.
+
+B<Important Note>: To make this method work as documented, this extension must override other eventual page_content_check() methods defined in other extension, so it has to be included AFTER Apache::CGI::Builder that defines its own page_content_check():
+
+    use CGI::Builder
+    qw| Apache::CGI::Builder
+        CGI::Builder::Magic
+      |;
+
+B<Note>: You don't need to directly use this method since it's internally called at the very start of the RESPONSE phase. You don't need to override it if you want just to send a different header status, since it sets the status just if it is not defined yet.
 
 =head1 SUPPORT and FEEDBACK
 

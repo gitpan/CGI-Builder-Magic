@@ -1,6 +1,6 @@
 #!perl -w
 ; use strict
-; use Test::More tests => 6
+; use Test::More tests => 7
 ; use CGI
 
 
@@ -43,12 +43,16 @@
 ; my $o5 = $ap5->capture('process')
 ; ok( $$o5 =~ /text START ID1 ATTRIBUTES1 text ID2 text/ )
 
-# start.html + passing zone obj
+
 ; my $ap6 = ApplMagic6->new(cgi => CGI->new({p=>'ENV_RM'}))
 ; my $o6 = $ap6->capture('process')
 ; ok( $$o6 =~ /WebApp 1.0/
     && $$o6 =~ /PATH/ )
 
+# 204 error
+; my $ap7 = ApplMagic6->new(cgi => CGI->new({p=>'not_found'}))
+; my $o7 = $ap7->capture('process')
+; ok( $$o7 =~ /204 No Content/ )
 
 
 
