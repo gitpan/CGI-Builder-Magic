@@ -1,5 +1,11 @@
 CGI-Builder-Magic Latest Versions Changes
 
+
+Version 1.28
+- Changed the prerequisite to T::M version 1.33
+- Added tm_container_template property to better support the new
+  'container_template' Template::Magic feature
+  
 Version 1.27
 - Changed the prerequisite to T::M version 1.3
 - Fixed the INCLUDE_TEMPLATE path problem (now you can use paths relative to

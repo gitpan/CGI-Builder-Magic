@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.27 ;
+$VERSION = 1.28 ;
 
 # This file uses the "Perlish" coding style
 # please read http://perl.4pro.net/perlish_coding_style.html
@@ -33,9 +33,7 @@ $VERSION = 1.27 ;
       )
 
 ; use Object::props
-      ( { name       => 'tm_lookups'
-        }
-      , { name       => 'tm_template'
+      ( { name       => 'tm_template'
         , default    => sub
                          { File::Spec->catfile( $_[0]->page_name
                                               . $_[0]->page_suffix
@@ -48,6 +46,8 @@ $VERSION = 1.27 ;
       , { name       => 'page_content'
         , default    => sub{ $print_code }
         }
+      , 'tm_lookups'
+      , 'tm_container_template'
       )
       
 ; sub tm_new
@@ -118,9 +118,12 @@ $VERSION = 1.27 ;
 ; sub CGI::Builder::Magic::_::tm_print
    { my $s = shift
    ; $s->tm->{CBB} = $s
-   ; my $tl = $s->tm_lookups
+   ; my $tl = $s->tm_lookups || []
    ; $tl &&= [ $tl ] unless ref $tl eq 'ARRAY'
-   ; $s->tm->print( $s->tm_template, @$tl, scalar $s->page_error  )
+   ; $s->tm->nprint( template => $s->tm_template
+                   , container_template => $s->tm_container_template
+                   , lookups => [ @$tl, scalar $s->page_error ]
+                   )
    ; delete $s->tm->{CBB} # allows $s destroyng
    }
 
@@ -155,7 +158,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.27
+=head1 VERSION 1.28
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
@@ -166,7 +169,7 @@ The latest versions changes are reported in the F<Changes> file in this distribu
 =item Prerequisites
 
     CGI::Builder    >= 1.2
-    Template::Magic >= 1.3
+    Template::Magic >= 1.33
 
 =item CPAN
 
@@ -514,6 +517,10 @@ This property allows you to access and set the 'lookups' argument passed to the 
 =head2 tm_template
 
 This property allows you to access and set the 'template' argument passed to the Template::Magic::nprint() method (see L<Template::Magic/"nprint ( arguments )">). Its default is the concatenation (File::Spec->catfile) of the C<page_path>, C<page_name> and C<page_suffix> properties, but you can set it otherwise if you want to use a different template file.
+
+=head2 tm_container_template
+
+This property allows you to access and set the 'container_template' argument passed to the Template::Magic::nprint() method (see L<Template::Magic/"nprint ( arguments )">).
 
 =head2 CBF changed property defaults
 

@@ -17,7 +17,7 @@
                        , 'Class::props'    => 1.62
                        , 'Class::groups'   => 1.62
                        , 'Object::props'   => 1.62
-                       , 'Template::Magic' => 1.3
+                       , 'Template::Magic' => 1.33
                        }
    )
 
