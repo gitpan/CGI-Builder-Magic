@@ -1,0 +1,16 @@
+Changes
+lib/CGI/Builder/Magic.pm
+Makefile.PL
+MANIFEST			This list of files
+META.yml
+perl_side_include/lib/MagicWebApp.pm
+perl_side_include/README.txt
+perl_side_include/www/.htaccess
+perl_side_include/www/index.html
+perl_side_include/www/show_env.html
+perl_side_include/www/show_mix.html
+README
+t/01_features.t
+t/Test.pm
+t/tm/ENV_RM.html
+t/tm/index.html
