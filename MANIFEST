@@ -18,5 +18,6 @@ t/TestD.pm
 t/TestS.pm
 t/tm/dfv.html
 t/tm/ENV_RM.html
+t/tm/form.html
 t/tm/index.html
 t/tm/sess.html

@@ -1,6 +1,13 @@
 CGI-Builder-Magic Latest Versions Changes
 
 
+Version 1.22
+- Added 'FillInForm' special label
+- Some improvements in the Lookups POD section
+- Added the EFFICIENCY POD section
+- Added some tests
+- Changed the prerequisite Template::Magic version to 1.12
+
 Version 1.21
 - Fixed page_error persistency problem
 - Added some tests

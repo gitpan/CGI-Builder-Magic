@@ -83,6 +83,13 @@
       }
    ; \@table
    }
+   
+; package ApplMagic8
+; use CGI::Builder
+  qw| CGI::Builder::Magic
+    |
+
+
 
 ; 1
 

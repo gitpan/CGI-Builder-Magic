@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.21 ;
+$VERSION = 1.22 ;
           
 ; use strict
 ; use Carp
@@ -53,6 +53,7 @@ $VERSION = 1.21 ;
      ; no strict 'refs'
      ; *$CGI::Session::NAME = sub { shift()->cs->id }
                               if $s->isa('CGI::Builder::Session')
+     ; *FillInForm          = sub { shift()->cgi }
      }
    ; my $lpk = $s->tm_lookups_package
    ; $lpk  &&= [ $lpk ] unless ref $lpk eq 'ARRAY'
@@ -134,7 +135,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.21
+=head1 VERSION 1.22
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
@@ -145,7 +146,7 @@ The latest versions changes are reported in the F<Changes> file in this distribu
 =item Prerequisites
 
     CGI::Builder    >= 1.2
-    Template::Magic >= 1.0
+    Template::Magic >= 1.12
 
 =item CPAN
 
@@ -180,7 +181,7 @@ This module transparently integrates C<CGI::Builder> and C<Template::Magic> in a
 
 With this module, you don't need to produce the C<page_content> within your page handlers anymore (unless you want to); you don't even need to manage a template system yourself (unless you want to).
 
-If you use a template system on your own (i.e. not integrated in a CBF extension), you will have to write all this code explicitly:
+If you use any template system on your own (i.e. not integrated in a CBF extension), you will have to write all this code explicitly:
 
 =over
 
@@ -266,6 +267,8 @@ B<Note>: All the CBF extensions are fully mod_perl 1 and 2 compatible (i.e. you 
 
 This module implements a default value for the C<page_content> property: a CODE reference that produces and print the page content by using an internal C<Template::Magic> object with HTML syntax.
 
+The default template file used to produce the output is the result of the concatenation (File::Spec->catfile) of the C<page_path>, C<page_name> and C<page_suffix> properties, but you can set it otherwise if you want to use a different template file.
+
 Since the C<page_content> property is set to its own default value before the page handler is called, the page handler can completely (and usually should) avoid to produce any output.
 
     sub PH_myPage
@@ -305,15 +308,59 @@ If some page handler needs to produce the output on its own (completely bypassin
 
 For the 'mySpecialPage' page, the application will not use the template system at all, because the C<page_content> property was set to the output.
 
-B<Note>: For former CGI::Application users: the returned value of any page handler will be ALWAYS ignored, so set explicitly the C<page_content> property when needed.
+B<Note>: For former CGI::Application users: the returned value of any page handler will be ALWAYS ignored, so set explicitly the C<page_content> property when needed (or ignore it if you want to use the template system).
 
 =head2 Lookups
 
-This module implements some useful lookups defaults that allows you to have automagically available inside your templates the C<page_errors> (that you or some extensions may have set), some special integration values (see L<"SPECIAL INTEGRATIONS">), and a special package where you can define the run time values which will be substituted in your templates.
+Lookups are 'code locations' where the Template::Magic system will search the runtime values to substitute the labels in your template. (See L<Template::Magic/"lookups"> for details)
+
+=head3 Special Labels
+
+This module automatically adds to the Template::Magic object some useful lookups which make available several ready to use labels inside your templates. You don't need to write any code in your CBB in order to use these labels:
+
+=over
+
+=item * all the page_error keys
+
+If your CBB or some other extensions (like the L<CGI::Builder::DFVCheck|CGI::Builder::DFVCheck>) set some C<page_error> key value pair, they will be available as labels in your template:
+
+    $s->page_error( err_email => 'The email field is not valid' );
+
+in your template you can use:
+
+    <!--{err_email}-->
+
+that will be substituted with 'The email field is not valid'.
+
+=item * the FillInForm block label
+
+The special block label 'FillInForm' is very useful to redisplay a HTML form that has some input error and re-filling all the fields with the values that the user has just submitted.
+
+In order to do so, you have just to use it inside your template by making a block that surrounds the HTML form:
+
+    <!--{FillInForm}-->
+    <form action="tank_you_page" method="get">
+    Name: <input name="name" type="text" value=""><br>
+    Email: <input name="email" type="text" value=""><br>
+    <input type="submit" name="submit" value="Submit">
+    </form>
+    <!--{/FillInForm}-->
+
+=item * the CGISESSID label
+
+When you include in your CBB the L<CGI::Builder::Session|CGI::Builder::Session> extension, you will have magically available a label that will be substituted with the current session id. The label identifier is the same name contained in the $CGI::Session::NAME variable which is usually 'CGISESSID', unless you have set it otherwise.
+
+   <!--{CGISESSID}-->
+
+E.g.: You can use it to set the value of an hidden field in your forms.
+
+B<Note>: The simple use of this label in a template might internally create a CGI::Session object (C<cs> property) thus eventually generating a new session on its own if no session object has been used in your CBB yet.
+
+=back
 
 =head3 *::Lookups package
 
-This is a special package that your application should define to allow the internal Template::Magic object to auto-magically look up the run time values.
+This is a special package that your application should define to allow the internal Template::Magic object to auto-magically look up the run time values you want to define.
 
 The name of this package is contained in the L<"tm_lookups_package"> B<class property>. The default value for this property is 'FooBar::Lookup' where 'FooBar' is not literal, but stands for your CBB namespace plus the '::Lookups' string, so if you define a CBB package as 'WebApp' you should define a 'WebApp::Lookups' package too (or set the C<tm_lookup_package> property with the name of the package you will use as the lookup).
 
@@ -325,7 +372,7 @@ B<Note>: If for any reason you need to use more than one *::Lookup package, you 
 
 =head3 *::Lookups subs
 
-The subs in the C<*::Lookups> package(s) are executed by the template lookup whenever a label with the same identifier is found. They receive your application object ($self) in $_[0], so even if they are defined in a different package, they are just like the other methods in your class.
+The subs in the C<*::Lookups> package(s) are executed by the template lookup whenever a label with the same identifier is found. They receive your application object ($self) in $_[0], so even if they are defined in a different package, they are just like the other methods in your CBB class.
 
 The subs will receive the C<Template::Magic::Zone> object as $_[1], so you can interact with the zone as usual (see L<Template::Magic>)
 
@@ -442,13 +489,7 @@ Please, take a look at the 'perl_side_include' example in this distribution to u
 
 =head2 CGI::Builder::Session
 
-When you include in your CBB the L<CGI::Builder::Session|CGI::Builder::Session> extension, you will have magically available a label that will be substituted with the current session id. The label identifier is the same name contained in the $CGI::Session::NAME variable which is usually 'CGISESSID', unless you have set it otherwise.
-
-   <!--{CGISESSID}-->
-
-E.g.: You can use it to set the value of an hidden field in your forms.
-
-B<Note>: The simple use of this label in a template might internally create a CGI::Session object (C<cs> property) thus eventually generating a new session on its own if no session object has been used in your CBB yet.
+When you include in your CBB the L<CGI::Builder::Session|CGI::Builder::Session> extension, you will have magically available a label that will be substituted with the current session id. See L<the CGISESSID label|"item_the_CGISESSID_label"> for details.
 
 =head2 CGI::Builder::DFVCheck
 
@@ -507,7 +548,7 @@ B<Note>: You can change the default arguments of the object by using the C<tm_ne
 
 =head3 tm_new_args( arguments )
 
-This B<class group accessor> handles the Template::Magic constructor arguments that are used in the creation of the internal Template::Magic object. Use it to add some more lookups your application might need, or finetune the behaviour if you know what are doing (see L<"How to add lookup locations"> and L<Template::Magic/"new ( [constructor_arrays] )">).
+This B<class group accessor> handles the Template::Magic constructor arguments that are used in the creation of the internal Template::Magic object. Use it to add some more lookups your application might need, or finetune the behaviour if you know what you are doing (see L<"How to add lookup locations"> and L<Template::Magic/"new ( [constructor_arrays] )">).
 
    __PACKAGE__->tm_new_args(...) ;
 
@@ -539,6 +580,15 @@ B<Note>: This method will add to the object lookups the C<tm_lookups_package> pa
 This extension use this method to check if the template file exists before using its template print method, thus avoiding a fatal error when the requested page is not found.
 
 B<Note>: You don't need to directly use this method since it's internally called at the very start of the RESPONSE phase. You don't need to override it if you want just to send a different header status, since the CBF sets the status just if it is not defined yet.
+
+=head1 EFFICIENCY
+
+You should add a couple of optional statements to your CBB in order to load at compile time the TableTiler and the FillInForm autoloaded handlers:
+
+    use CGI (); # as recommended in the C::B manpage
+    use Template::Magic qw( -compile HTML::TableTiler HTML::FillInForm );
+
+If you can do so, you could also put the statements directly in the F<startup.pl> file. See also L<Template::Magic/"The -compile pragma">.
 
 =head1 SUPPORT
 

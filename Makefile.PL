@@ -1,7 +1,7 @@
 ; use ExtUtils::MakeMaker
 
 ; my $dist = 'CGI::Builder::Magic'
-; my $vers = '1.21'
+; my $vers = '1.22'
 
 ; WriteMakefile
    ( NAME           => $dist
@@ -12,7 +12,7 @@
        )
      : ()
    , PREREQ_PM      => { 'CGI::Builder'    => '1.2'
-                       , 'Template::Magic' => '1.0'
+                       , 'Template::Magic' => '1.12'
                        }
    )
 
