@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.26 ;
+$VERSION = 1.27 ;
 
 # This file uses the "Perlish" coding style
 # please read http://perl.4pro.net/perlish_coding_style.html
@@ -7,7 +7,7 @@ $VERSION = 1.26 ;
 ; use strict
 ; use Carp
 ; $Carp::Internal{+__PACKAGE__}++
-; $Carp::Internal{'CGI::Builder::Magic::_'}++
+; $Carp::Internal{__PACKAGE__.'::_'}++
 
 ; use File::Spec
 ; use Template::Magic
@@ -37,8 +37,7 @@ $VERSION = 1.26 ;
         }
       , { name       => 'tm_template'
         , default    => sub
-                         { File::Spec->catfile( $_[0]->page_path
-                                              , $_[0]->page_name
+                         { File::Spec->catfile( $_[0]->page_name
                                               . $_[0]->page_suffix
                                               )
                          }
@@ -75,6 +74,7 @@ $VERSION = 1.26 ;
                          , 'FillInForm'
                          , 'OBJECT'
                          ]
+     , paths          => [ $s->page_path ]
      , %{$s->tm_new_args}
      , lookups        => $l # overriding considerd before
      )
@@ -96,7 +96,7 @@ $VERSION = 1.26 ;
            elsif (  length($class)     # if blessed obj
                  && eval { $l->isa( $class ) }
                  )
-            { no strict 'refs' 
+            { no strict 'refs'
             ; $z->value = $l->$v( ${"$class\::no_template_magic_zone"} ? () : $z
                                 , @args )
             }
@@ -124,18 +124,29 @@ $VERSION = 1.26 ;
    ; delete $s->tm->{CBB} # allows $s destroyng
    }
 
-; sub page_content_check
-   { my $s = shift
-   ; $s->page_content eq $print_code
-     ? -f (  $$s{tm_template}    # bypass the accessor
-          || File::Spec->catfile( $s->page_path
-                                , $s->page_name
-                                . $s->page_suffix
-                                )
-          )
-     : length $s->page_content
-   }
 
+; sub page_content_check
+   { my $s  = shift
+   ; unless ( $s->page_content eq $print_code )  # not managed by tm
+      { $s->CGI::Builder::page_content_check
+      }
+     else
+      { my $template
+      # tm_template set for current page
+      ; if ( $$s{tm_template} )
+         { return 1 if ref($$s{tm_template}) =~ /(GLOB|SCALAR)/
+         ; $template = $$s{tm_template}
+         }
+        # tm not set
+        else
+         { $template = $s->page_name
+                     . $s->page_suffix
+         }
+      # check
+      ; $s->tm->find_file( $template )
+      }
+   }
+   
 ; 1
 
 __END__
@@ -144,7 +155,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.26
+=head1 VERSION 1.27
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
@@ -155,7 +166,7 @@ The latest versions changes are reported in the F<Changes> file in this distribu
 =item Prerequisites
 
     CGI::Builder    >= 1.2
-    Template::Magic >= 1.12
+    Template::Magic >= 1.3
 
 =item CPAN
 
@@ -185,6 +196,8 @@ From the directory where this file is located, type:
       |;
 
 =head1 DESCRIPTION
+
+B<Note>: You should know L<CGI::Builder>.
 
 This module transparently integrates C<CGI::Builder> and C<Template::Magic> in a very handy, powerful and flexible framework that can save you a lot of coding, time and resources.
 
@@ -231,20 +244,6 @@ Define just the page handlers that needs to do something special
 =item 3
 
 Set the variables or the subs in the C<*::Lookups> package that the internal C<Template::Magic> object will look up (that could be picked up by one or more templates processing)
-
-=back
-
-=head2 Useful links
-
-=over
-
-=item *
-
-A simple and useful navigation system between the various CBF extensions is available at this URL: L<http://perl.4pro.net>
-
-=item *
-
-More examples and more practical topics are available in the mailing list at this URL: L<http://lists.sourceforge.net/lists/listinfo/cgi-builder-users>
 
 =back
 
@@ -601,11 +600,7 @@ If you can do so, you could also put the statements directly in the F<startup.pl
 
 =head1 SUPPORT
 
-Support for all the modules of the CBF is via the mailing list. The list is used for general support on the use of the CBF, announcements, bug reports, patches, suggestions for improvements or new features. The API to the CBF is stable, but if you use the CBF in a production environment, it's probably a good idea to keep a watch on the list.
-
-You can join the CBF mailing list at this url:
-
-L<http://lists.sourceforge.net/lists/listinfo/cgi-builder-users>
+See L<CGI::Builder/"SUPPORT">.
 
 =head1 AUTHOR and COPYRIGHT
 

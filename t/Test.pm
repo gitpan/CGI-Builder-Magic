@@ -7,8 +7,8 @@
     |
     
 ; package ApplMagic1::Lookups
-; sub myID1 { 'ID1'. $_[1]->attributes }
-; our $myID2 = 'ID2'
+; sub my_ID1 { 'ID1'. $_[1]->attributes }
+; our $my_ID2 = 'ID2'
 
 
 
@@ -18,11 +18,11 @@
     |
 
 ; sub OH_init
-   { $_[0]->myID1 = 'ID1'
+   { $_[0]->my_ID1 = 'ID1'
    }
 
 ; package ApplMagic2::Lookups
-; our $myID2 = 'ID2'
+; our $my_ID2 = 'ID2'
 
 
 
@@ -39,11 +39,11 @@
 }
 
 ; package ApplMagic4::Lookups
-; our $myID2 = 'ID2'
+; our $my_ID2 = 'ID2'
 
-; sub myID1 { $_[0]->_myID1 }
+; sub my_ID1 { $_[0]->_my_ID1 }
 
-; sub _myID1 { 'ID1' }
+; sub _my_ID1 { 'ID1' }
 
 
 
@@ -58,8 +58,8 @@
    }
 
 ; package ApplMagic5::dd
-; sub myID1 { 'ID1'. $_[1]->attributes }
-; our $myID2 = 'ID2'
+; sub my_ID1 { 'ID1'. $_[1]->attributes }
+; our $my_ID2 = 'ID2'
 
 
 

@@ -3,19 +3,21 @@
 
 ; use ExtUtils::MakeMaker
 
-; my $dist = 'CGI::Builder::Magic'
-; my $vers = '1.26'
+; my $pm = 'lib/CGI/Builder/Magic.pm'
 
 ; WriteMakefile
-   ( NAME           => $dist
-   , VERSION        => $vers
+   ( NAME           => 'CGI::Builder::Magic'
+   , VERSION_FROM   => $pm
    , ( $] ge '5.005' )
-     ? ( AUTHOR     => 'Domizio Demichelis - perl.4pro.net'
-       , ABSTRACT   => 'CGI::Builder and Template::Magic integration'
+     ? ( AUTHOR         => 'Domizio Demichelis - perl.4pro.net'
+       , ABSTRACT_FROM  => $pm
        )
      : ()
-   , PREREQ_PM      => { 'CGI::Builder'    => '1.2'
-                       , 'Template::Magic' => '1.12'
+   , PREREQ_PM      => { 'CGI::Builder'    => 1.2
+                       , 'Class::props'    => 1.62
+                       , 'Class::groups'   => 1.62
+                       , 'Object::props'   => 1.62
+                       , 'Template::Magic' => 1.3
                        }
    )
 

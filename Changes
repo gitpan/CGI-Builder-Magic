@@ -1,5 +1,12 @@
 CGI-Builder-Magic Latest Versions Changes
 
+Version 1.27
+- Changed the prerequisite to T::M version 1.3
+- Fixed the INCLUDE_TEMPLATE path problem (now you can use paths relative to
+  the page_path)
+- Improved the page_content_check() method
+- A few minor changes in the Makefile.PL and the POD
+- Added memory leaking test
 
 Version 1.26
 - Eliminated version check and installation feedback system
