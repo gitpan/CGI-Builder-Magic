@@ -3,7 +3,6 @@
 ; use Test::More tests => 9
 ; use CGI
 
-
 ; BEGIN
    { chdir './t'
    ; require './Test.pm'
@@ -52,27 +51,33 @@
 ; my $ap7 = ApplMagic6->new(cgi => CGI->new({p=>'not_found'}))
 ; my $o7 = $ap7->capture('process')
 ; ok( $$o7 =~ /204 No Content/ )
+    
 
-# FillInForm block
-; my $ap8 = ApplMagic8->new( cgi => CGI->new( { name =>'domizio'
-                                              , surname=>'demichelis'
-                                              }
-                                            )
-                           , page_name => 'form'
-                           )
-; my $o8 = $ap8->capture('process')
-; ok(  $$o8 =~ /domizio.*demichelis/s )
+; SKIP:
+   { skip("HTML::FillInForm is not installed", 2)
+     unless eval { require HTML::FillInForm }
 
-# automatic lookup of page_error
-; my $ap9 = ApplMagic8->new( cgi => CGI->new( { name =>'domizio'
-                                              , surname=>'demichelis'
-                                              }
-                                            )
-                           , page_name => 'form'
-                           )
-; $ap9->page_error(err_name => 'name_error')
-; my $o9 = $ap9->capture('process')
-; ok(  $$o9 =~ /domizio.*name_error.*demichelis/s )
+   # FillInForm block
+   ; my $ap8 = ApplMagic8->new( cgi => CGI->new( { name =>'domizio'
+                                                 , surname=>'demichelis'
+                                                 }
+                                               )
+                              , page_name => 'form'
+                              )
+   ; my $o8 = $ap8->capture('process')
+   ; ok(  $$o8 =~ /domizio.*demichelis/s )
+
+   # automatic lookup of page_error inside the FillInForm block
+   ; my $ap9 = ApplMagic8->new( cgi => CGI->new( { name =>'domizio'
+                                                 , surname=>'demichelis'
+                                                 }
+                                               )
+                              , page_name => 'form'
+                              )
+   ; $ap9->page_error(err_name => 'name_error')
+   ; my $o9 = $ap9->capture('process')
+   ; ok(  $$o9 =~ /domizio.*name_error.*demichelis/s )
+   }
 
 
 

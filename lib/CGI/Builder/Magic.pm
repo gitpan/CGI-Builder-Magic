@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.22 ;
+$VERSION = 1.23 ;
           
 ; use strict
 ; use Carp
@@ -69,6 +69,7 @@ $VERSION = 1.22 ;
                          , 'ARRAY'
                          , 'HASH'
                          , 'FillInForm'
+                         , 'OBJECT'
                          ]
      , %{$s->tm_new_args}
      , lookups        => $l # overriding considerd before
@@ -82,18 +83,18 @@ $VERSION = 1.22 ;
       ; my $v = $z->value
       ; if ( ref $v eq 'CODE' )
          { my $l = $z->location
+         ; my $class = ref $l
          ; if ( grep /$l/, @$lpk )
             { $z->value = $z->value->( $z->tm->{CBB}
                                      , @_
                                      )
             }
-           elsif (  length(ref $l)     # if blessed obj
-                 && eval { $l->isa( ref $l ) }
+           elsif (  length($class)     # if blessed obj
+                 && eval { $l->isa( $class ) }
                  )
-            { $z->value = $z->value->( $l      # set value to result
-                                     , $z
-                                     , @args
-                                     )
+            { no strict 'refs' 
+            ; $z->value = $l->$v( ${"$class\::no_template_magic_zone"} ? () : $z
+                                , @args )
             }
            else                     # if not blessed obj
             { $z->value = $z->value->( $z      # set value to result
@@ -109,7 +110,7 @@ $VERSION = 1.22 ;
          }
       }
    }
-
+   
 ; sub CGI::Builder::Magic::_::tm_print
    { my $s = shift
    ; $s->tm->{CBB} = $s
@@ -121,10 +122,9 @@ $VERSION = 1.22 ;
 
 ; sub page_content_check
    { my $s = shift
-   ; not (  $s->page_content eq $print_code
-         && not(-f $s->tm_template)
-         || not length $s->page_content
-         )
+   ; $s->page_content eq $print_code
+     ? -f $s->tm_template
+     : length $s->page_content
    }
 
 ; 1
@@ -135,7 +135,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.22
+=head1 VERSION 1.23
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
@@ -150,9 +150,9 @@ The latest versions changes are reported in the F<Changes> file in this distribu
 
 =item CPAN
 
-    perl -MCPAN -e 'install CGI::Builder::Magic'
+    perl -MCPAN -e 'install Apache::CGI::Builder'
 
-If you want to install all the extensions and prerequisites of the CBF, all in one easy step:
+You have also the possibility to use the Bundle to install all the extensions and prerequisites of the CBF in just one step. Please, notice that the Bundle will install A LOT of modules that you might not need, so use it specially if you want to extensively try the CBF.
 
     perl -MCPAN -e 'install Bundle::CGI::Builder::Complete'
 
@@ -231,11 +231,11 @@ Set the variables or the subs in the C<*::Lookups> package that the internal C<T
 
 =item *
 
-A simple and useful navigation system between the various CBF extensions is available at this URL: http://perl.4pro.net
+A simple and useful navigation system between the various CBF extensions is available at this URL: L<http://perl.4pro.net>
 
 =item *
 
-More practical topics are probably discussed in the mailing list at this URL: http://lists.sourceforge.net/lists/listinfo/cgi-builder-users
+More practical topics are probably discussed in the mailing list at this URL: L<http://lists.sourceforge.net/lists/listinfo/cgi-builder-users>
 
 =back
 
@@ -583,7 +583,7 @@ B<Note>: You don't need to directly use this method since it's internally called
 
 =head1 EFFICIENCY
 
-You should add a couple of optional statements to your CBB in order to load at compile time the TableTiler and the FillInForm autoloaded handlers:
+You should add a couple of optional statements to your CBB in order to load at compile time the TableTiler and the FillInForm autoloaded handlers (just if you use them in your templates):
 
     use CGI (); # as recommended in the C::B manpage
     use Template::Magic qw( -compile HTML::TableTiler HTML::FillInForm );
@@ -596,10 +596,10 @@ Support for all the modules of the CBF is via the mailing list. The list is used
 
 You can join the CBF mailing list at this url:
 
-http://lists.sourceforge.net/lists/listinfo/cgi-builder-users
+L<http://lists.sourceforge.net/lists/listinfo/cgi-builder-users>
 
 =head1 AUTHOR and COPYRIGHT
 
-© 2004 by Domizio Demichelis (http://perl.4pro.net)
+© 2004 by Domizio Demichelis (L<http://perl.4pro.net>)
 
 All Rights Reserved. This module is free software. It may be used, redistributed and/or modified under the same terms as perl itself.
