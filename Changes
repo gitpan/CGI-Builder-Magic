@@ -1,6 +1,10 @@
 CGI-Builder-Magic Latest Versions Changes
 
 
+Version 1.11
+- This version contains the real 1.1 files: the 1.1 distribution
+  file was a wrong outdated file. Sorry for the mismatch.
+  
 Version 1.1
 - Advanced method 'page_content_check' overridden with automatic set of 204
   or 404 status header when the template is not found (unless status is

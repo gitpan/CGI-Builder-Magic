@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.1 ;
+$VERSION = 1.11 ;
           
 ; use strict
 ; use Carp
@@ -87,16 +87,16 @@ $VERSION = 1.1 ;
 
 ; sub page_content_check
    { my $s = shift
-   ; my $status = $Apache::CGI::Builder::VERSION
+   ; my $status = $s->isa('Apache::CGI::Builder')
                 ? '404 Not Found'
                 : '204 No Content'
    ; my $t = $s->tm_template
    ; $t = $s->tm_template = File::Spec
-                       ->file_name_is_absolute( $t )
-                       ? $t
-                       : File::Spec->catfile( $s->page_path
-                                            , $t
-                                            )
+                            ->file_name_is_absolute( $t )
+                            ? $t
+                            : File::Spec->catfile( $s->page_path
+                                                 , $t
+                                                 )
    ; if (  not( length $s->page_content )
         || (  $s->page_content eq $print_code
            && not -f $t
@@ -117,7 +117,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.1
+=head1 VERSION 1.11
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
@@ -127,7 +127,7 @@ The latest versions changes are reported in the F<Changes> file in this distribu
 
 =item Prerequisites
 
-    CGI::Builder    >= 1.1
+    CGI::Builder    >= 1.11
     Template::Magic >= 1.0
 
 =item CPAN
@@ -224,7 +224,7 @@ B<Note>: All the CBF extensions are fully mod_perl 1 and 2 compatible (i.e. you 
     
     # this value will be substituted to each
     # 'app_name' label in EACH TEMPLATE that include it
-    our $app_name = 'WebApp 1.1' ;
+    our $app_name = 'WebApp 1.0' ;
     
     # same for each 'Time' label
     sub Time { scalar localtime }
