@@ -1,6 +1,13 @@
 CGI-Builder-Magic Latest Versions Changes
 
 
+Version 1.12
+- Simplified interface for lookups
+- Added automagic integration with CGI::Builder::Session
+- Added POD Advanced features section to simplify
+  the reading of the doc
+- Added POD Special Integrations section
+
 Version 1.11
 - This version contains the real 1.1 files: the 1.1 distribution
   file was a wrong outdated file. Sorry for the mismatch.

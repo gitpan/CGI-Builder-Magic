@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.11 ;
+$VERSION = 1.12 ;
           
 ; use strict
 ; use Carp
@@ -13,16 +13,14 @@ $VERSION = 1.11 ;
 
 ; sub CGI::Builder::Magic::_::tm_print
    { my $s = shift
-   ; my $lkps = $s->tm_lookups
-   ; $lkps &&= [ $lkps ] unless ref $lkps eq 'ARRAY'
-   ; my $err = $s->page_error
-               if ref $s->page_error eq 'HASH'
-   ; $s->tm
-       ->nprint( template => $s->tm_template
-               , lookups  => [ defined $lkps ? @$lkps : ()
-                             , defined $err  ? $err   : ()
-                             ]
-               )
+   ; my $l = $s->tm_lookups
+   ; $l  &&= [ $l ] unless ref $l eq 'ARRAY'
+   ; push @$l, scalar $s->page_error if defined %{$s->page_error}
+   ; push @$l, { $CGI::Builder::NAME => $s->cs->id } if defined $$s{cs}
+   ; push @$l, $s->tm_lookups_package
+   ; $s->tm->nprint( template => $s->tm_template
+                   , lookups  => $l
+                   )
    }
    
 ; BEGIN
@@ -33,8 +31,7 @@ $VERSION = 1.11 ;
       ( { name       => 'tm_new_args'
         , default
           => sub
-              { { lookups        => [ $_[0]->tm_lookups_package ]
-                , value_handlers => [ $_[0]
+              { { value_handlers => [ $_[0]
                                       ->CGI::Builder::Magic::_::lookup_CODE()
                                     , 'HTML'
                                     ]
@@ -117,7 +114,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.11
+=head1 VERSION 1.12
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
@@ -127,7 +124,7 @@ The latest versions changes are reported in the F<Changes> file in this distribu
 
 =item Prerequisites
 
-    CGI::Builder    >= 1.11
+    CGI::Builder    >= 1.12
     Template::Magic >= 1.0
 
 =item CPAN
@@ -207,7 +204,7 @@ It uses minimum memory because it prints the output while it is produced, avoidi
 
 The integration with Template::Magic allows you to move all the output-related stuff out of the page handlers,  producing a cleaner and easiest to maintain CBB.
 
-B<Note>: All the CBF extensions are fully mod_perl 1 and 2 compatible (i.e. you can use them under both CGI and mod_perl). Anyway, an extremely powerful combination with this extension is the L<Apache::CGI::Builder|Apache::CGI::Builder>, that can easily implement a sort of L<"Perl Side Include"> (sort of easier, more powerful and flexible "Server Side Include").
+B<Note>: All the CBF extensions are fully mod_perl 1 and 2 compatible (i.e. you can use them under both CGI and mod_perl). Anyway, an extremely powerful combination with this extension is the L<Apache::CGI::Builder|Apache::CGI::Builder>, that can easily implement a sort of L<Perl Side Include|"APACHE::CGI::Builder (Perl Side Include)"> (sort of easier, more powerful and flexible "Server Side Include").
 
 =head2 Example
 
@@ -273,7 +270,7 @@ An auto-magically used template (it contains the 'ENV_table block', and the 'app
 
 This module implements a default value for the C<page_content> property: a CODE reference that produces and print the page content by using an internal C<Template::Magic> object with HTML syntax.
 
-Since the C<page_content> property is set to its own default value in the C<OH_init()> of this module, (i.e. before the page handler is called), the page handler can completely (and usually should) avoid to produce any output.
+Since the C<page_content> property is set to its own default value before the page handler is called, the page handler can completely (and usually should) avoid to produce any output.
 
     sub PH_myPage
     {
@@ -322,11 +319,13 @@ B<Note>: For former CGI::Application users: the returned value of any page handl
 
 This is a special package that your application should define to allow the internal Template::Magic object to auto-magically look up the run time values.
 
-The name of this package is contained in the L<"tm_lookups_package> property. The default value for this property is 'FooBar::Lookup' where 'FooBar' is not literal, but stands for your CBB namespace plus the '::Lookups' string, so if you define a CBB package as 'WebApp' you should define a 'WebApp::Lookups' package too.
+The name of this package is contained in the L<"tm_lookups_package"> property. The default value for this property is 'FooBar::Lookup' where 'FooBar' is not literal, but stands for your CBB namespace plus the '::Lookups' string, so if you define a CBB package as 'WebApp' you should define a 'WebApp::Lookups' package too (or set the C<tm_lookup_package> property with the name of the package you will use as the lookup).
 
 In this package you should define all the variables and subs needed to supply any runtime value that will be substituted in place of the matching label or block in any template.
 
-B<Note>: The lookup is confined to the C<*::Lookups> package on purpose. It would be simpler to use the same CBB package, but this would extend the lookup to all the properties, methods and handlers of your CBB and this could cause conflict and security holes. So, by just adding one line to your CBB, (e.g. 'package FooBar::Lookups;') you can separate your CBB from the lookup-allowed part of it.
+The lookup is confined to the C<*::Lookups> package on purpose. It would be simpler to use the same CBB package, but this would extend the lookup to all the properties, methods and handlers of your CBB and this might cause conflict and security holes. So, by just adding one line to your CBB, (e.g. 'package FooBar::Lookups;') you can separate your CBB from the lookup-allowed part of it.
+
+B<Note>: Obviously you can also put the C<*::Lookup> package in its own '.pm' file, thus making it simply loadable from different CBBs.
 
 =head3 *::Lookups subs
 
@@ -334,17 +333,26 @@ The subs in the C<*::Lookups> package are executed by the template lookup whenev
 
 The subs will receive the C<Template::Magic::Zone> object as $_[1], so you can interact with the zone as usual (see L<Template::Magic>)
 
-Usually a sub in the *::Lookup package is an ending point and should not need to call any other subs in the same *::Lookup package. If you feel the need to do otherwise, you probably should re-read L<Template::Magic> because you are trying to do something that Template::Magic is already doing auto-magically. Anyway, if you found some esoteric situation that I never think about, you can do *::Lookup subs callable from the same package by just making your CBB package a subclass of *::Lookup package by adding a simple C<push our @ISA, 'FooBar::Lookups';> statement in it.
+Usually a sub in the *::Lookup package is an ending point and should not need to call any other subs in the same *::Lookup package. If you feel the need to do otherwise, you probably should re-read L<Template::Magic> because you are trying to do something that Template::Magic is already doing auto-magically. Anyway, if you found some esoteric situation that I never thinked about, you can do *::Lookup subs callable from the same package by just making your CBB package a subclass of *::Lookup package by adding a simple C<push our @ISA, 'FooBar::Lookups';> statement in it.
 
 =head3 How to add lookup locations
 
-If you want the C<Template::Magic> object to look up in some more location, e.g. if you want the object to loookup in the param hash and %ENV too, you can add this statement anywhere before the page handler exits (e.g. in the OH_init(), in the page handler itself)
+If you want the C<Template::Magic> object to look up in some more location, e.g. if you want the object to loookup in the param hash and in %ENV, you can choose beetween a couple of solutions: you can use the C<tm_lookups> property or the C<tm_new_args> group property.
 
-    $self->tm_new_args
-      ( lookups => [ $self->tm_lookups_package, # remember the *::Lookups pkg
-                     scalar $self->data         # data hash ref
-                     \%ENV  ]);                 # %ENV ref
+This is the first option:
 
+    # this will be add as the first lookups
+    $s->tm_lookups = [ scalar $s->param ,      # param hash ref
+                       \%ENV  ] ;              # %ENV ref
+
+Or you have a second option: add this statement anywhere before using the C<tm> object and before the RESPONSE phase (e.g. in the OH_init(), in the page handler itself)
+
+    # this will be add as the last lookups
+    $s->tm_new_args
+      ( lookups => [ scalar $s->param ,      # param hash ref
+                     \%ENV  ]);              # %ENV ref
+
+B<Note>: The first option uses the temporary lookups capability of Template::Magic object, while the second one uses the constructor array lookups. They have almost the same effect on the output (the difference is just the lookups order). The use of the first has less requirements so try it first. See L<Template::Magic> for more details.
 
 =head2 The template syntax
 
@@ -352,9 +360,9 @@ This module implements a C<Template::Magic::HTML> object, so the used C<markers>
 
     <!--{a_block_label}--> content <!--{/a_block_label}-->
 
-and the I<value handlers> are the default HTML handler, so including C<TableTiler> and C<FillInForm> handlers by default. Please, read L<Template::Magic> and L<Template::Magic::HTML>. 
+and the I<value handlers> are the default HTML handler, so including C<TableTiler> and C<FillInForm> handlers by default. Please, read L<Template::Magic> and L<Template::Magic::HTML>.
 
-=head2 How to organize the application module
+=head2 How to organize your CBB
 
 =over
 
@@ -379,9 +387,12 @@ Define just the page handlers that needs to do something special
 Use the properties default values, that can save you a lot of time ;-)
 
 =back
-                           .
 
-=head2 Perl Side Include
+=head1 SPECIAL INTEGRATIONS
+
+This extension will add some special features to your CBB when some specific extension is included.
+
+=head2 Apache::CGI::Builder (Perl Side Include)
 
 SSI (Server Side Includes) are directives that are placed in HTML pages, and evaluated on the server while the pages are being served. The Apache server uses the C<mod_include> Apache module to process the pages, but you can configure it to process the pages by using your own CBB, that can easily implement a lot of more custom 'directives' in the form of simple labels.
 
@@ -391,11 +402,17 @@ With this technique B<your application does not need to handle neither page name
 
 Please, take a look at the 'perl_side_include' example in this distribution to understand all the advantages offered by this technique.
 
-=head1 METHODS
+=head2 CGI::Builder::Session
 
-=head2 tm_new()
+When you include in your CBB the CGI::Builder::Session extension, you will have magically available a label that will be substituted with the current session id. The label identifier is the same name contained in the $CGI::Session::NAME variable which is usually 'CGISESSID', unless you have set it otherwise.
 
-This method initializes and returns the internal C<Template::Magic> object. You can override it if you know what you are doing, or you can simply ignore it ;-).
+   <!--{CGISESSID}-->
+
+E.g.: You can use it to set the value of an hidden field in your forms.
+
+=head2 CGI::Builder::DFVCheck
+
+The CGI::Builder::DFVCheck extension sets the CBF C<page_error> property with the errors found in your forms. CGI::Builder::Magic adds that property to its lookups, so each error found will have its own label defined. See L<" CGI::Builder::DFVCheck"> for more details.
 
 =head1 PROPERTY and GROUP ACCESSORS
 
@@ -405,8 +422,6 @@ This module adds some template properties (all those prefixed with 'tm_') to the
 
 This property allows you to access and set the name of the package where the Template::Magic object will look up by default. The default value for this property is'FooBar::Lookup' where 'FooBar' is not literal, but stands for your application namespace plus the '::Lookups' string. (i.e. 'WebApp::Lookup').
 
-B<Note>: The 'lookups' argument of the C<tm_new_args> group will override this property.
-
 =head2 tm_lookups
 
 This property allows you to access and set the 'lookups' argument passed to the Template::Magic::nprint() method (see L<Template::Magic/"nprint ( arguments )">)
@@ -414,20 +429,6 @@ This property allows you to access and set the 'lookups' argument passed to the 
 =head2 tm_template
 
 This property allows you to access and set the 'template' argument passed to the Template::Magic::nprint() method (see L<Template::Magic/"nprint ( arguments )">). Set This property to an absolute path if you want bypass the C<page_path> property.
-
-=head2 tm
-
-This property returns the internal C<Template::Magic> object.
-
-This is not intended to be used to generate the page output - that is generated automagically - but it could be useful to generate other outputs (e.g. messages for sendmail) by using the same template object, thus preserving the same arguments.
-
-B<Note>: You can change the default arguments of the object by using the C<tm_new_args> property, or you can completely override the creation of the internal object by overriding the C<tm_new()> method.
-
-=head2 tm_new_args( arguments )
-
-This property group accessor handles the Template::Magic constructor arguments that are used in the creation of the internal Template::Magic object. Use it to add some more lookups your application could need, or finetune the behaviour if you know what are doing (see L<"How to add lookup locations"> and L<Template::Magic/"new ( [constructor_arrays] )">).
-
-B<Note>: You can completely override the creation of the internal object by overriding the C<tm_new()> method.
 
 =head2 CBF changed property defaults
 
@@ -438,6 +439,28 @@ This module sets the default of the C<page_suffix> to '.html'. You can override 
 =head3 CBF page_content
 
 This module sets the default of the C<page_content> to a CODE reference that produces the page content by using an internal Template::Magic object with HTML syntax (see also L<"How it works">). If you want to bypass the template system in any Page Handler, just explicitly set the C<page_content> to the content you want to send.
+
+=head1 ADVANCED FEATURES
+
+In this section you can find all the most advanced or less used features that document all the details of this module. In most cases you don't need to use them, anyway, knowing them will not hurt.
+
+=head2 tm
+
+This property returns the internal C<Template::Magic> object.
+
+This is not intended to be used to generate the page output - that is generated automagically - but it could be useful to generate other outputs (e.g. messages for sendmail) by using the same template object, thus preserving the same arguments.
+
+B<Note>: You can change the default arguments of the object by using the C<tm_new_args> property, or you can completely override the creation of the internal object by overriding the C<tm_new()> method.
+
+=head2 tm_new()
+
+This method is not intended to be used directly in your CBB. It is used internally to initialize and return the C<Template::Magic> object. You can override it if you know what you are doing, or you can simply ignore it ;-).
+
+=head2 tm_new_args( arguments )
+
+This property group accessor handles the Template::Magic constructor arguments that are used in the creation of the internal Template::Magic object. Use it to add some more lookups your application could need, or finetune the behaviour if you know what are doing (see L<"How to add lookup locations"> and L<Template::Magic/"new ( [constructor_arrays] )">).
+
+B<Note>: You can completely override the creation of the internal object by overriding the C<tm_new()> method.
 
 =head2 CBF overridden methods
 
@@ -454,7 +477,9 @@ B<Important Note>: To make this method work as documented, this extension must o
 
 B<Note>: You don't need to directly use this method since it's internally called at the very start of the RESPONSE phase. You don't need to override it if you want just to send a different header status, since it sets the status just if it is not defined yet.
 
-=head1 SUPPORT and FEEDBACK
+=head1 SUPPORT
+
+Support for all the modules of the CBF is via the mailing list. The list is used for general support on the use of the CBF, announcements, bug reports, patches, suggestions for improvements or new features. The API to the CBF is stable, but if you use the CBF in a production environment, it's probably a good idea to keep a watch on the list.
 
 You can join the CBF mailing list at this url:
 
