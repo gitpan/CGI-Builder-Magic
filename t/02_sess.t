@@ -5,10 +5,11 @@
 ; our $CS
 
 ; BEGIN
-   { chdir './t'
-   ; if ( eval { require CGI::Builder::Session } )
+   { if ( eval { require CGI::Builder::Session } )
       { $CS = 1
-      ; require 'TestS.pm'
+      ; eval { require './t/TestS.pm' }
+            || require './TestS.pm'
+      ; chdir './t'
       }
    }
    

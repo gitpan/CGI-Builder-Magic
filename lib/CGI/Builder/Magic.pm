@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.24 ;
+$VERSION = 1.25 ;
 
 # This file uses the "Perlish" coding style
 # please read http://perl.4pro.net/perlish_coding_style.html
@@ -31,6 +31,7 @@ $VERSION = 1.24 ;
         , default    => sub{ ref($_[0]) . '::Lookups' }
         }
       )
+
 ; use Object::props
       ( { name       => 'tm_lookups'
         }
@@ -126,7 +127,12 @@ $VERSION = 1.24 ;
 ; sub page_content_check
    { my $s = shift
    ; $s->page_content eq $print_code
-     ? -f $s->tm_template
+     ? -f (  $$s{tm_template}    # bypass the accessor
+          || File::Spec->catfile( $s->page_path
+                                , $s->page_name
+                                . $s->page_suffix
+                                )
+          )
      : length $s->page_content
    }
 
@@ -138,7 +144,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.24
+=head1 VERSION 1.25
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
@@ -240,7 +246,7 @@ A simple and useful navigation system between the various CBF extensions is avai
 
 =item *
 
-More practical topics are probably discussed in the mailing list at this URL: L<http://lists.sourceforge.net/lists/listinfo/cgi-builder-users>
+More examples and more practical topics are available in the mailing list at this URL: L<http://lists.sourceforge.net/lists/listinfo/cgi-builder-users>
 
 =back
 
@@ -591,7 +597,7 @@ B<Note>: You don't need to directly use this method since it's internally called
 You should add a couple of optional statements to your CBB in order to load at compile time the TableTiler and the FillInForm autoloaded handlers (just if you use them in your templates):
 
     use CGI (); # as recommended in the C::B manpage
-    use Template::Magic qw( -compile HTML::TableTiler HTML::FillInForm );
+    use Template::Magic qw( -compile TableTiler FillInForm );
 
 If you can do so, you could also put the statements directly in the F<startup.pl> file. See also L<Template::Magic/"The -compile pragma">.
 

@@ -6,10 +6,11 @@
 ; our $DFV
 
 ; BEGIN
-   { chdir './t'
-   ; if ( eval { require CGI::Builder::DFVCheck } )
+   { if ( eval { require CGI::Builder::DFVCheck } )
       { $DFV = 1
-      ; require 'TestD.pm'
+      ; eval { require './t/TestD.pm' }
+            || require './TestD.pm'
+      ; chdir './t'
       }
    }
    

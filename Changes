@@ -1,6 +1,11 @@
 CGI-Builder-Magic Latest Versions Changes
 
 
+Version 1.25
+- Changed the test chdir (it didn't work on some system)
+- Changed page_content_check in order to correct a minor problem
+  related to switch_to + page_path
+
 Version 1.24
 - Minor POD changes
 
