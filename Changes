@@ -1,6 +1,11 @@
 CGI-Builder-Magic Latest Versions Changes
 
 
+Version 1.26
+- Eliminated version check and installation feedback system
+  ("phone home" opt-out) from Makefile.PL to make Randal L Schwartz happy :-)
+  and sad the author :-(
+
 Version 1.25
 - Changed the test chdir (it didn't work on some system)
 - Changed page_content_check in order to correct a minor problem
