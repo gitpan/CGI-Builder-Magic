@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.2 ;
+$VERSION = 1.21 ;
           
 ; use strict
 ; use Carp
@@ -59,7 +59,7 @@ $VERSION = 1.2 ;
    ; my $l   = $s->tm_new_args('lookups')
    ; $l    &&= [ $l ] unless ref $l eq 'ARRAY'
    ; push @$lpk, 'CGI::Builder::Magic::Lookups'
-   ; push @$l, @$lpk, scalar $s->page_error
+   ; push @$l, @$lpk
    ; Template::Magic->new
      ( value_handlers => [ 'SCALAR'
                          , 'REF'
@@ -112,7 +112,9 @@ $VERSION = 1.2 ;
 ; sub CGI::Builder::Magic::_::tm_print
    { my $s = shift
    ; $s->tm->{CBB} = $s
-   ; $s->tm->print( $s->tm_template, $s->tm_lookups )
+   ; my $tl = $s->tm_lookups
+   ; $tl &&= [ $tl ] unless ref $tl eq 'ARRAY'
+   ; $s->tm->print( $s->tm_template, @$tl, scalar $s->page_error  )
    ; delete $s->tm->{CBB} # allows $s destroyng
    }
 
@@ -132,7 +134,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.2
+=head1 VERSION 1.21
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 

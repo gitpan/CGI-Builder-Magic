@@ -1,6 +1,10 @@
 CGI-Builder-Magic Latest Versions Changes
 
 
+Version 1.21
+- Fixed page_error persistency problem
+- Added some tests
+
 Version 1.2
 - The tm and tm_new_args and tm_lookups_package accessors are now
   referring to class variables (before they were instance variables),

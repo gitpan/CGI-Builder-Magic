@@ -2,12 +2,11 @@
 ; use strict
 ; use Test::More tests => 1
 ; use CGI
-
 ; our $CS
 
 ; BEGIN
    { chdir './t'
-   ; if ( eval { require CGI::Session } )
+   ; if ( eval { require CGI::Builder::Session } )
       { $CS = 1
       ; require 'TestS.pm'
       }
@@ -16,7 +15,7 @@
     
 
 ; SKIP:
-   { skip("CGI::Session is not installed", 1)
+   { skip("CGI::Builder::Session is not installed", 1)
      unless $CS
 
    ; my $ap1 = TestSess->new(page_name =>'sess')

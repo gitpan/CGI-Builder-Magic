@@ -12,8 +12,11 @@ perl_side_include/www/show_mix.html
 README
 t/01_features.t
 t/02_sess.t
+t/03_dfv.t
 t/Test.pm
+t/TestD.pm
 t/TestS.pm
+t/tm/dfv.html
 t/tm/ENV_RM.html
 t/tm/index.html
 t/tm/sess.html
