@@ -1,6 +1,14 @@
 CGI-Builder-Magic Latest Versions Changes
 
 
+Version 1.13
+- Internal changes for lookups to allow more flexible usage (the automatic
+  lookups are added to the constructor instead of the temporary lookups)
+- Internal changes to allow more efficient object destroying
+  (if used with Template::Magic >= 1.1)
+- Added OH_cleanup handler to allow automatic tm object destroy
+  in CLEANUP phase
+
 Version 1.12
 - Simplified interface for lookups
 - Added automagic integration with CGI::Builder::Session

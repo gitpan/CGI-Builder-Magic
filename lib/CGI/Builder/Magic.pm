@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.12 ;
+$VERSION = 1.13 ;
           
 ; use strict
 ; use Carp
@@ -10,36 +10,26 @@ $VERSION = 1.12 ;
 ; use Template::Magic
 
 ; my $print_code
-
-; sub CGI::Builder::Magic::_::tm_print
-   { my $s = shift
-   ; my $l = $s->tm_lookups
-   ; $l  &&= [ $l ] unless ref $l eq 'ARRAY'
-   ; push @$l, scalar $s->page_error if defined %{$s->page_error}
-   ; push @$l, { $CGI::Builder::NAME => $s->cs->id } if defined $$s{cs}
-   ; push @$l, $s->tm_lookups_package
-   ; $s->tm->nprint( template => $s->tm_template
-                   , lookups  => $l
-                   )
-   }
-   
 ; BEGIN
-   { $print_code = sub{ shift()->CGI::Builder::Magic::_::tm_print(@_) }
+   { $print_code = sub
+                    { shift()->CGI::Builder::Magic::_::tm_print(@_)
+                    }
    }
 
 ; use Object::groups
-      ( { name       => 'tm_new_args'
+        { name       => 'tm_new_args'
         , default
           => sub
-              { { value_handlers => [ $_[0]
+              { return
+                { value_handlers => [ $_[0]
                                       ->CGI::Builder::Magic::_::lookup_CODE()
-                                    , 'HTML'
+                                    ,
+                                     'HTML'
                                     ]
                 , markers        => 'HTML'
                 }
               }
         }
-      )
 
 ; use Object::props
       ( { name       => 'tm_lookups'
@@ -65,28 +55,49 @@ $VERSION = 1.12 ;
       )
       
 ; sub tm_new
-   { Template::Magic->new( %{$_[0]->tm_new_args} )
+   { my $s = shift
+   ; my $l = $s->tm_new_args('lookups')
+   ; $l  &&= [ $l ] unless ref $l eq 'ARRAY'
+   ; push @$l, scalar $s->page_error
+   ; push @$l, { $CGI::Builder::NAME => sub
+                                         { $_[0]->cs->id
+                                           if defined $$_[0]{cs}
+                                         }
+               } if $s->isa('CGI::Builder::Session')
+   ; push @$l, $s->tm_lookups_package
+   ; $s->tm_new_args( lookups => $l )
+   ; Template::Magic->new( %{$s->tm_new_args} )
    }
 
 ; sub CGI::Builder::Magic::_::lookup_CODE     # value handler
    { my ($s) = @_
+   ; my $tm_lookups_package = $s->tm_lookups_package
    ; sub
       { my ($z) = @_
       ; if ( ref $z->value eq 'CODE'
-           && $z->location eq $s->tm_lookups_package
+           && $z->location eq $tm_lookups_package
            )
-         { $z->value = $z->value->($s, @_)
+         { $z->value = $z->value->($z->tm->{CBF}, @_)
          ; $z->value_process
          ; 1
          }
       }
    }
 
+; sub CGI::Builder::Magic::_::tm_print
+   { my $s = shift
+   # adds the CBB object to the tm object used in lookup_CODE                  
+   ; $s->tm->{CBF} = $s
+   ; $s->tm->nprint( template => $s->tm_template
+                   , lookups  => $s->tm_lookups
+                   )
+   }
+
 ; sub page_content_check
    { my $s = shift
    ; my $status = $s->isa('Apache::CGI::Builder')
-                ? '404 Not Found'
-                : '204 No Content'
+                  ? '404 Not Found'
+                  : '204 No Content'
    ; my $t = $s->tm_template
    ; $t = $s->tm_template = File::Spec
                             ->file_name_is_absolute( $t )
@@ -105,6 +116,10 @@ $VERSION = 1.12 ;
       }
    ; 1
    }
+   
+; sub OH_cleanup
+   { delete $_[0]{tm} # also clears {tm}{CBF} reference
+   }
 
 ; 1
 
@@ -114,7 +129,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.12
+=head1 VERSION 1.13
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
@@ -124,7 +139,7 @@ The latest versions changes are reported in the F<Changes> file in this distribu
 
 =item Prerequisites
 
-    CGI::Builder    >= 1.12
+    CGI::Builder    >= 1.13
     Template::Magic >= 1.0
 
 =item CPAN
@@ -455,6 +470,8 @@ B<Note>: You can change the default arguments of the object by using the C<tm_ne
 =head2 tm_new()
 
 This method is not intended to be used directly in your CBB. It is used internally to initialize and return the C<Template::Magic> object. You can override it if you know what you are doing, or you can simply ignore it ;-).
+
+This method will add some lookups to the C<tm_new_args> lookups that you have eventually set: it adds the C<tm_lookups_package>, the CBF C<page_error> hash, and the eventual CGI::Session::id
 
 =head2 tm_new_args( arguments )
 
