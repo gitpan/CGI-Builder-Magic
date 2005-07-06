@@ -11,8 +11,8 @@ Installation
 ------------
 
 0.  Prerequisites:
-- CGI::Builder    >= 1.2
-- Template::Magic >= 1.12
+- CGI::Builder    >= 1.31
+- Template::Magic >= 1.36
 
 1. CPAN installation
 

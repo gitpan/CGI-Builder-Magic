@@ -89,7 +89,7 @@
   qw| CGI::Builder::Magic
     |
 
-
+#; __PACKAGE__->tm_extra_value_handlers( FillInForm => 1 )
 
 ; 1
 

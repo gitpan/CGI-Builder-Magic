@@ -2,12 +2,12 @@
 ; use strict
 ; use Test::More tests => 9
 ; use CGI
+; use Data::Dumper
 
 ; BEGIN
-   { eval { require './t/Test.pm' }
-         || require './Test.pm'
-   ; chdir './t'
-   }
+  { chdir './t'
+  ; require './Test.pm'
+  }
    
 
 # index.html + passing zone obj
@@ -64,6 +64,7 @@
                                                  }
                                                )
                               , page_name => 'form'
+                              
                               )
    ; my $o8 = $ap8->capture('process')
    ; ok(  $$o8 =~ /domizio.*demichelis/s )

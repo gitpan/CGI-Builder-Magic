@@ -1,31 +1,22 @@
 #!perl -w
 ; use strict
-; use Test::More tests => 2
-; use CGI
 
-; our $DFV
+; BEGIN{ chdir './t' }
 
-; BEGIN
-   { if ( eval { require CGI::Builder::DFVCheck } )
-      { $DFV = 1
-      ; eval { require './t/TestD.pm' }
-            || require './TestD.pm'
-      ; chdir './t'
-      }
-   }
-   
-    
+; use Test::More;
+; eval "use CGI::Builder::DFVCheck"
+; plan skip_all => "CGI::Builder::DFVCheck is not installed" if $@
 
-; SKIP:
-   { skip("CGI::Builder::DFVCheck is not installed", 2)
-     unless $DFV
+; plan tests => 2
+; require 'TestD.pm'
 
-   ; my $ap1 = TestDFV->new()
-   ; my $o1 = $ap1->capture('process')
-   ; ok(  $$o1 =~ /start--><span.+<--end/i )
-   
-   ; my $ap2 = TestDFV->new(page_name => 'dfv')
-   ; my $o2 = $ap2->capture('process')
-   ; ok(  $$o2 =~ /start--><--end/i )
-   }
+
+; my $ap1 = TestDFV->new()
+; my $o1 = $ap1->capture('process')
+; ok(  $$o1 =~ /start--><span.+<--end/i )
+
+; my $ap2 = TestDFV->new(page_name => 'dfv')
+; my $o2 = $ap2->capture('process')
+; ok(  $$o2 =~ /start--><--end/i )
+
 

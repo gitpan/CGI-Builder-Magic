@@ -1,16 +1,17 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.28 ;
+$VERSION = 1.3 ;
+use strict ;
 
 # This file uses the "Perlish" coding style
 # please read http://perl.4pro.net/perlish_coding_style.html
           
-; use strict
 ; use Carp
 ; $Carp::Internal{+__PACKAGE__}++
 ; $Carp::Internal{__PACKAGE__.'::_'}++
 
 ; use File::Spec
 ; use Template::Magic
+; use Class::Util
 
 ; my $print_code
 ; BEGIN
@@ -19,37 +20,44 @@ $VERSION = 1.28 ;
                     }
    }
 ; use Class::groups
-        { name       => 'tm_new_args'
-        , default    => { markers => 'HTML' }
-        }
+  ( { name       => 'tm_extra_value_handlers'
+    , default     => { TableTiler => 1
+                    , FillInForm => 1
+                    }
+    }
+  , { name       => 'tm_new_args'
+    , default    => { markers => 'HTML' }
+    }
+  )
         
 ; use Class::props
-      ( { name       => 'tm'
-        , default    => sub{ shift()->tm_new(@_) }
-        }
-      , { name       => 'tm_lookups_package'
-        , default    => sub{ ref($_[0]) . '::Lookups' }
-        }
-      )
+  ( { name       => 'tm'
+    , default    => sub{ shift()->tm_new(@_) }
+    }
+  , { name       => 'tm_lookups_package'
+    , default    => sub{ ref($_[0]) . '::Lookups' }
+    }
 
+  )
+  
 ; use Object::props
-      ( { name       => 'tm_template'
-        , default    => sub
-                         { File::Spec->catfile( $_[0]->page_name
-                                              . $_[0]->page_suffix
-                                              )
-                         }
-        }
-      , { name       => 'page_suffix'
-        , default    => '.html'
-        }
-      , { name       => 'page_content'
-        , default    => sub{ $print_code }
-        }
-      , 'tm_lookups'
-      , 'tm_container_template'
-      )
-      
+  ( { name       => 'tm_template'
+    , default    => sub
+                     { File::Spec->catfile( $_[0]->page_name
+                                          . $_[0]->page_suffix
+                                          )
+                     }
+    }
+ , { name       => 'page_suffix'
+    , default    => '.html'
+    }
+ , { name       => 'page_content'
+    , default    => sub{ $print_code }
+    }
+  , 'tm_lookups'
+  , 'tm_container_template'
+  )
+   
 ; sub tm_new
    { my $s = shift
    ; { package CGI::Builder::Magic::Lookups
@@ -64,14 +72,15 @@ $VERSION = 1.28 ;
    ; $l    &&= [ $l ] unless ref $l eq 'ARRAY'
    ; push @$lpk, 'CGI::Builder::Magic::Lookups'
    ; push @$l, @$lpk
+   ; my $tmxh = $s->tm_extra_value_handlers
    ; Template::Magic->new
      ( value_handlers => [ 'SCALAR'
                          , 'REF'
                          , $s->CGI::Builder::Magic::_::CODE($lpk)
-                         ,'TableTiler'
+                         , $$tmxh{TableTiler} ? 'TableTiler' : ()
                          , 'ARRAY'
                          , 'HASH'
-                         , 'FillInForm'
+                         , $$tmxh{FillInForm} ? 'FillInForm': ()
                          , 'OBJECT'
                          ]
      , paths          => [ $s->page_path ]
@@ -87,34 +96,25 @@ $VERSION = 1.28 ;
       ; my $v = $z->value
       ; if ( ref $v eq 'CODE' )
          { my $l = $z->location
-         ; my $class = ref $l
-         ; if ( grep /$l/, @$lpk )
-            { $z->value = $z->value->( $z->tm->{CBB}
-                                     , @_
-                                     )
-            }
-           elsif (  length($class)     # if blessed obj
-                 && eval { $l->isa( $class ) }
-                 )
-            { no strict 'refs'
-            ; $z->value = $l->$v( ${"$class\::no_template_magic_zone"} ? () : $z
-                                , @args )
-            }
-           else                     # if not blessed obj
-            { $z->value = $z->value->( $z      # set value to result
-                                     , @args
-                                     )
-            }
-         ; if ( defined $z->value   # avoid error if a sub return undef
-              && $v ne $z->value    # avoid infinite loop in undef sub
-              )
-            { $z->value_process    # process the new value
+         ; my $nv = (grep /$l/, @$lpk)  ? $v->( $z->tm->{CBB}, @_ )
+                   : Class::Util::blessed( $l ) # if blessed obj
+                     ? do { no strict 'refs'
+                          ; $l->$v( ${ref($l).'::no_template_magic_zone'}
+                                    ? ()
+                                    : $z
+                                  , @args
+                                  )
+                          }
+                   : $v->( $z , @args )
+         ; if ( $v ne ($nv||'') ) # avoid infinite loop
+            { $z->value = $nv
+            ; $z->value_process     # process the new value
             }
          ; 1
          }
       }
    }
-   
+
 ; sub CGI::Builder::Magic::_::tm_print
    { my $s = shift
    ; $s->tm->{CBB} = $s
@@ -126,7 +126,6 @@ $VERSION = 1.28 ;
                    )
    ; delete $s->tm->{CBB} # allows $s destroyng
    }
-
 
 ; sub page_content_check
    { my $s  = shift
@@ -154,11 +153,13 @@ $VERSION = 1.28 ;
 
 __END__
 
+=pod
+
 =head1 NAME
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.28
+=head1 VERSION 1.3
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
@@ -168,8 +169,8 @@ The latest versions changes are reported in the F<Changes> file in this distribu
 
 =item Prerequisites
 
-    CGI::Builder    >= 1.2
-    Template::Magic >= 1.33
+    CGI::Builder    >= 1.31
+    Template::Magic >= 1.36
 
 =item CPAN
 
@@ -580,6 +581,14 @@ If you need to use more than one *::Lookups package, you can also set this prope
    __PACKAGE__->tm_lookups_package([ 'My::Special::Lookups',
                                      'My::Other::Lookups'  ] ) ;
 
+=head2 tm_extra_value_handlers
+
+This B<class group accessor> handles the 'TableTiler' and 'FillInForm' value handlers. You must explicitly exclude them in order to save some loading and execution time (if your application doesn't use them):
+
+   __PACKAGE__->tm_extra_value_handlers( 'FillInForm' => 0
+                                       , 'TableTiler' => 0
+                                       );
+
 =head2 Advanced methods
 
 =head3 tm_new()
@@ -614,3 +623,5 @@ See L<CGI::Builder/"SUPPORT">.
 © 2004 by Domizio Demichelis (L<http://perl.4pro.net>)
 
 All Rights Reserved. This module is free software. It may be used, redistributed and/or modified under the same terms as perl itself.
+
+=cut

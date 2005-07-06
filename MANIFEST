@@ -14,6 +14,8 @@ t/02_sess.t
 t/03_dfv.t
 t/04_memory_leaking.t
 t/Test.pm
+t/test_pod.t
+t/test_pod_coverage.t
 t/TestD.pm
 t/TestS.pm
 t/tm/dfv.html

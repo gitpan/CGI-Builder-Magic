@@ -1,26 +1,16 @@
 #!perl -w
 ; use strict
-; use Test::More tests => 1
-; use CGI
-; our $CS
+; BEGIN { chdir './t' }
 
-; BEGIN
-   { if ( eval { require CGI::Builder::Session } )
-      { $CS = 1
-      ; eval { require './t/TestS.pm' }
-            || require './TestS.pm'
-      ; chdir './t'
-      }
-   }
-   
-    
+; use Test::More
+; eval "use CGI::Builder::Session"
+; plan skip_all => "CGI::Builder::Session is not installed" if $@
 
-; SKIP:
-   { skip("CGI::Builder::Session is not installed", 1)
-     unless $CS
+; plan tests => 1
+; require 'TestS.pm'
 
-   ; my $ap1 = TestSess->new(page_name =>'sess')
-   ; my $o1 = $ap1->capture('process')
-   ; ok(  $$o1 =~ /start-->.{32}<--end/i )
-   }
+; my $ap1 = TestSess->new(page_name =>'sess')
+; my $o1 = $ap1->capture('process')
+; ok(  $$o1 =~ /start-->.{32}<--end/i )
+
 

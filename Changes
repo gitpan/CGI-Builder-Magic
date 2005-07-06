@@ -1,6 +1,13 @@
 CGI-Builder-Magic Latest Versions Changes
 
 
+Version 1.3
+- Updated to Template::Magic v1.36
+- Changed the prerequisite to CBF v1.3, T::M v1.36, OOTools 2.1
+- Added 'tm_extra_value_handlers' class accessor group
+- Added the 'tm_extra_value_handlers' class group accessor, which allows
+  to exclude the 'TableTiler' and 'FillInForm' handlers
+
 Version 1.28
 - Changed the prerequisite to T::M version 1.33
 - Added tm_container_template property to better support the new

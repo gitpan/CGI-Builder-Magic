@@ -13,11 +13,12 @@
        , ABSTRACT_FROM  => $pm
        )
      : ()
-   , PREREQ_PM      => { 'CGI::Builder'    => 1.2
-                       , 'Class::props'    => 1.62
-                       , 'Class::groups'   => 1.62
-                       , 'Object::props'   => 1.62
-                       , 'Template::Magic' => 1.33
+   , PREREQ_PM      => { 'CGI::Builder'    => 1.3
+                       , 'Class::props'    => 2.1
+                       , 'Class::groups'   => 2.1
+                       , 'Object::props'   => 2.1
+                       , 'Class::Util'     => 2.1
+                       , 'Template::Magic' => 1.36
                        }
    )
 
