@@ -1,5 +1,5 @@
 package CGI::Builder::Magic ;
-$VERSION = 1.3 ;
+$VERSION = 1.31 ;
 use strict ;
 
 # This file uses the "Perlish" coding style
@@ -21,9 +21,9 @@ use strict ;
    }
 ; use Class::groups
   ( { name       => 'tm_extra_value_handlers'
-    , default     => { TableTiler => 1
-                    , FillInForm => 1
-                    }
+    , default    => { TableTiler => 1
+                     , FillInForm => 1
+                     }
     }
   , { name       => 'tm_new_args'
     , default    => { markers => 'HTML' }
@@ -48,10 +48,10 @@ use strict ;
                                           )
                      }
     }
- , { name       => 'page_suffix'
+  , { name       => 'page_suffix'
     , default    => '.html'
     }
- , { name       => 'page_content'
+  , { name       => 'page_content'
     , default    => sub{ $print_code }
     }
   , 'tm_lookups'
@@ -107,7 +107,7 @@ use strict ;
                           }
                    : $v->( $z , @args )
          ; if ( $v ne ($nv||'') ) # avoid infinite loop
-            { $z->value = $nv
+            { $z->value($nv)
             ; $z->value_process     # process the new value
             }
          ; 1
@@ -120,9 +120,9 @@ use strict ;
    ; $s->tm->{CBB} = $s
    ; my $tl = $s->tm_lookups || []
    ; $tl &&= [ $tl ] unless ref $tl eq 'ARRAY'
-   ; $s->tm->nprint( template => $s->tm_template
+   ; $s->tm->nprint( template           => $s->tm_template
                    , container_template => $s->tm_container_template
-                   , lookups => [ @$tl, scalar $s->page_error ]
+                   , lookups            => [ @$tl, scalar $s->page_error ]
                    )
    ; delete $s->tm->{CBB} # allows $s destroyng
    }
@@ -159,7 +159,7 @@ __END__
 
 CGI::Builder::Magic - CGI::Builder and Template::Magic integration
 
-=head1 VERSION 1.3
+=head1 VERSION 1.31
 
 The latest versions changes are reported in the F<Changes> file in this distribution. To have the complete list of all the extensions of the CBF, see L<CGI::Builder/"Extensions List">
 
